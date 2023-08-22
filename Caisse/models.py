@@ -5,11 +5,15 @@ from django.db.models import Sum
 class DailySales(models.Model):
     date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    modified_at = models.DateTimeField(auto_now=True)
+
+
 
 class DailyExpenses(models.Model):
     date = models.DateField()
     description = models.CharField(max_length=200)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    modified_at = models.DateTimeField(auto_now=True)
 
     @property
     def total_expenses(self):

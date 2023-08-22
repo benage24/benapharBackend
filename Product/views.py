@@ -4,6 +4,8 @@ from django.shortcuts import render
 
 from django.shortcuts import render
 from django.http import Http404
+from rest_framework.generics import ListAPIView
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -17,14 +19,36 @@ def get_object(pk):
         return Product.objects.get(pk=pk)
     except Product.DoesNotExist:
         raise Http404
-class ProductListView(APIView):
+# class ProductListView(APIView):
+#     # permission_classes = [permissions.IsAuthenticated]
+#     pagination_class = LimitOffsetPagination  # Set the pagination class
+#
+#     def get(self, request, format=None):
+#         snippets = Product.objects.all()
+#
+#         # Create an instance of the pagination class
+#         paginator = self.pagination_class()
+#
+#         # Paginate manually
+#         page = self.request.query_params.get('page')
+#         limit = self.request.query_params.get('limit')
+#         offset = self.request.query_params.get('offset')
+#
+#         if page and limit:
+#             self.pagination_class.page_size = int(limit)  # Adjust page size
+#             page_number = int(page)
+#             paginated_data = paginator.paginate_queryset(snippets, self.request)
+#             serializer = ProductSerializer(paginated_data, many=True)
+#             return paginator.get_paginated_response(serializer.data)
+#
+#         serializer = ProductSerializer(snippets, many=True)
+#         return Response(serializer.data)
+
+
+class ProductListView(ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    def get(self, request, format=None):
-        snippets = Product.objects.all()
-        serializer = ProductSerializer(snippets, many=True)
-
-        return Response(serializer.data)
-
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
 class ProductCreateView(APIView):
     serializer_class = ProductSerializer
     def post(self, request, format=None):
