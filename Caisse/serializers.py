@@ -12,3 +12,11 @@ class DailyExpensesSerializer(serializers.ModelSerializer):
     class Meta:
         model = DailyExpenses
         fields = '__all__'
+
+class DailyProfitsSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    total_sales = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_expenses = serializers.DecimalField(max_digits=10, decimal_places=2)
+    profit = serializers.DecimalField(max_digits=10, decimal_places=2)
+    saving = serializers.DecimalField(max_digits=10, decimal_places=2)
+    solde = serializers.DecimalField(max_digits=10, decimal_places=2)

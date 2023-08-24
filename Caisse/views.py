@@ -4,12 +4,13 @@ from django.shortcuts import render
 from decimal import Decimal
 
 from rest_framework import status, permissions
+from rest_framework.generics import ListAPIView
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from Caisse.models import DailySales, DailyExpenses
-from Caisse.serializers import DailySalesSerializer, DailyExpensesSerializer
+from Caisse.serializers import DailySalesSerializer, DailyExpensesSerializer, DailyProfitsSerializer
 from PharmacyInventory.pagination import CustomPageNumberPagination
 
 
@@ -38,15 +39,20 @@ class DailySalesCreateView(APIView):
 
 
 
-class DailySalesListView(APIView):
-    # permission_classes = [permissions.IsAuthenticated]
+class DailySalesListView(ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = CustomPageNumberPagination  # Set the pagination class
+    serializer_class = DailySalesSerializer
 
-    def get(self, request, format=None):
-        snippets = DailySales.objects.all()
-        serializer = DailySalesSerializer(snippets, many=True)
-
-        return Response(serializer.data)
+    def get_queryset(self):
+        # Customize your queryset here
+        queryset = DailySales.objects.order_by('date')
+        return queryset
+    # def get(self, request, format=None):
+    #     snippets = DailySales.objects.all().order_by('date')
+    #     serializer = DailySalesSerializer(snippets, many=True)
+    #
+    #     return Response(serializer.data)
 
 
 
@@ -74,15 +80,17 @@ class ExpenseCreateView(APIView):
 
 
 
-class DailyExpenseListView(APIView):
+class DailyExpenseListView(ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class =DailyExpensesSerializer
+    pagination_class = CustomPageNumberPagination  # Set the pagination class
+
+    def get_queryset(self):
+        # Customize your queryset here
+        queryset = DailyExpenses.objects.order_by('date')
+        return queryset
 
 
-    def get(self, request, format=None):
-        snippets = DailyExpenses.objects.all()
-        serializer = DailyExpensesSerializer(snippets, many=True)
-
-        return Response(serializer.data)
 
 
 class DailyExpenseDelete(APIView):
@@ -94,32 +102,33 @@ class DailyExpenseDelete(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class DailyReportProfitsList(APIView):
-    # permission_classes = [permissions.IsAuthenticated]
-    pagination_class = CustomPageNumberPagination  # Set the pagination class
 
-    def get(self, request):
-        daily_sales = DailySales.objects.all()
-        daily_expenses = DailyExpenses.objects.all()
 
-        # Paginate manually
-        page = self.request.query_params.get('page')
-        limit = self.request.query_params.get('limit')
-        offset = self.request.query_params.get('offset')
 
-        if page and limit:
-            limit = int(limit)
-            offset = int(offset) if offset else 0
-            start_index = offset + (limit * (int(page) - 1))
-            end_index = start_index + limit
-            daily_sales = daily_sales[start_index:end_index]
+
+class DailyReportProfitsList(ListAPIView):
+    serializer_class = DailyProfitsSerializer
+    pagination_class = CustomPageNumberPagination
+
+    def get_queryset(self):
+        # Filter and modify the queryset as needed
+        daily_expenses = DailyExpenses.objects.all().order_by('date')
+        queryset = DailySales.objects.all().order_by('date')
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        # Get the filtered and ordered queryset
+        queryset = self.filter_queryset(self.get_queryset())
+        daily_expenses = DailyExpenses.objects.all().order_by('date')
 
         daily_profits = []
-        for sale in daily_sales:
+        for sale in queryset:
             total_sales = sale.amount
             total_expenses = sum(expense.amount for expense in daily_expenses if expense.date == sale.date)
             profit = sale.amount - total_expenses
             res = profit / Decimal('1.25')
+
             saving = profit - res
 
             daily_profits.append({
@@ -127,62 +136,21 @@ class DailyReportProfitsList(APIView):
                 "total_sales": total_sales,
                 "total_expenses": total_expenses,
                 "profit": profit,
-                "saving": saving
+                "saving": saving,
+                "solde": res
             })
 
-        return Response(daily_profits)
+        # Paginate the data
+        page = self.paginate_queryset(daily_profits)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
-# class DailyReportProfitsList(APIView):
-#     # permission_classes = [permissions.IsAuthenticated]
-#     pagination_class = LimitOffsetPagination
-#     def get(self, request):
-#         daily_sales = DailySales.objects.all()
-#         daily_expenses = DailyExpenses.objects.all()
-#
-#         daily_profits = []
-#         for sale in daily_sales:
-#             total_sales = sale.amount
-#             total_expenses = sum(expense.amount for expense in daily_expenses if expense.date == sale.date)
-#             profit = sale.amount - total_expenses
-#             res= profit/Decimal('1.25')
-#             saving=profit-res
-#             print(res)
-#
-#             daily_profits.append({
-#                 "date": sale.date,
-#                 "total_sales": total_sales,
-#                 "total_expenses": total_expenses,
-#                 "profit": profit,
-#                 "saving":saving
-#             })
-#
-#         return Response(daily_profits)
-#
-
-class ProductListView(APIView):
-    # permission_classes = [permissions.IsAuthenticated]
-    pagination_class = LimitOffsetPagination  # Set the pagination class
-
-    def get(self, request, format=None):
-        snippets = DailySales.objects.all()
-
-        # Create an instance of the pagination class
-        paginator = self.pagination_class()
-
-        # Paginate manually
-        page = self.request.query_params.get('page')
-        limit = self.request.query_params.get('limit')
-        offset = self.request.query_params.get('offset')
-
-        if page and limit:
-            self.pagination_class.page_size = int(limit)  # Adjust page size
-            page_number = int(page)
-            paginated_data = paginator.paginate_queryset(snippets, self.request)
-            serializer = DailySalesSerializer(paginated_data, many=True)
-            return paginator.get_paginated_response(serializer.data)
-
-        serializer = DailySalesSerializer(snippets, many=True)
+        # If not paginated, serialize and return the data
+        serializer = self.get_serializer(daily_profits, many=True)
         return Response(serializer.data)
+
+
 
 
 
