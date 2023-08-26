@@ -1,16 +1,25 @@
 from django.urls import path
-from .views import DailySalesCreateView, DailyExpenseDelete,DailySalesListView, ExpenseCreateView,DailySalesDelete, DailyExpenseListView, DailyReportProfitsList
+from rest_framework.routers import DefaultRouter
 
+from .views import DailyExpenseFilterView, DailyReportCount, DailySalesFilterView, \
+    DailyReportProfitsFilter, \
+     DailyReportProfitsList, SaleViewSet, ExpenseViewSet
+
+router = DefaultRouter()
+router.register('sales', SaleViewSet)
+router.register('expense', ExpenseViewSet)
+# urlpatterns = router.urls
 urlpatterns = [
-    path('sales/create/', DailySalesCreateView.as_view(), name='daily-sales-create'),
-    path('sales/list/', DailySalesListView.as_view(), name='daily-sales-list'),
-    path('expense/create/', ExpenseCreateView.as_view(), name='expense-daily-create'),
-    path('expense/list/', DailyExpenseListView.as_view(), name='expense-daily-list'),
+
     path('report/', DailyReportProfitsList.as_view(), name='daily-profits-list'),
 
-    # deletes
-    path('sales/delete/<int:pk>/', DailySalesDelete.as_view()),
-path('expense/delete/<int:pk>/', DailyExpenseDelete.as_view()),
+
+    #filter
+    path('report/filter/', DailyReportProfitsFilter.as_view(), name='daily-profits-list'),
+    path('sales/filter/', DailySalesFilterView.as_view(), name='daily-profits-list'),
+    path('expense/filter/', DailyExpenseFilterView.as_view(), name='daily-profits-list'),
+
+    path('report/count/', DailyReportCount.as_view(), name='daily-profits-list'),
 
     # path('expenses/', DailyExpensesList.as_view(), name='daily-expenses-list'),
-]
+] + router.urls
