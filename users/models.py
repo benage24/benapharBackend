@@ -1,11 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import (AbstractBaseUser,BaseUserManager)
+from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager, Permission)
 from django.contrib.auth import get_user_model
 
 
 
 class MyUserManager(BaseUserManager):
-        def create_user(self,email,username,password=None):
+        def create_user(self,email,username,password=None,role=None,module=None, **extra_fields):
             """
                  Creates and saves a User with the given email, username
                  and password.
@@ -14,28 +14,54 @@ class MyUserManager(BaseUserManager):
                 raise ValueError('Users must have an email address')
             if not username:
                 raise ValueError('Users must have an username')
+
             user=self.model(
                 email=self.normalize_email(email),
-                username=username
+                username=username,
+                role=role,
+                module=module,
+                **extra_fields
             )
             user.set_password(password)
             user.save(using=self.db)
             return user
-        def create_superuser(self,email,username,password):
-            """
-                 Creates and saves a SuperUser with the given email, username
-                 and password.
-                 """
-            user=self.create_user(
+
+        def create_superuser(self, email, username, password):
+            user = self.create_user(
                 email=self.normalize_email(email),
                 password=password,
                 username=username
             )
-            user.is_superuser=True
-            user.is_staff=True
-            user.is_admin=True
-            user.save(using=self.db)
+            user.is_superuser = True
+            user.is_staff = True
+            user.is_admin = True
+            user.save(using=self._db)
+
+            # Create a superuser role with all permissions and assign it to the superuser
+            superuser_role, created = Role.objects.get_or_create(name='Superuser')
+            print(superuser_role)
+            if created:
+                superuser_role.permissions.add(*Permission.objects.all())
+            user.role = superuser_role
+            user.save(using=self._db)
+
             return user
+
+class Role(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    permissions = models.ManyToManyField(Permission)  # Use Django's built-in Permission model
+    def __str__(self):
+        return self.name
+
+class Module(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class CustomPermission(models.Model):
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    permission = models.ManyToManyField(Permission)
 
 class User(AbstractBaseUser):
     """
@@ -52,6 +78,9 @@ class User(AbstractBaseUser):
     is_staff             = models.BooleanField(default=False)
     is_author             = models.BooleanField(default=False)
     is_superuser         = models.BooleanField(default=False)
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
+    module = models.ForeignKey(Module, on_delete=models.SET_NULL, null=True, blank=True)
+
     objects=MyUserManager()
     USERNAME_FIELD='username'
     EMAIL_FIELD = 'email'
@@ -65,3 +94,5 @@ class User(AbstractBaseUser):
     def has_module_perms(self, app_label):
         "Does the user have permissions to view the app `app_label`?"
         return True
+
+
