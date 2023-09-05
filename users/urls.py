@@ -5,8 +5,8 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from Product.views import ProductViewSet
-from users.views import CustomPermissionViewSet,CustomTokenObtainPairView,ModuleViewSet, RoleCreateView, UserViewSet, UserCreateView
+from users.views import CustomPermissionViewSet, CustomTokenObtainPairView, ModuleViewSet, RoleCreateView, UserViewSet, \
+    UserCreateView
 
 router = DefaultRouter()
 router.register('user', UserViewSet)

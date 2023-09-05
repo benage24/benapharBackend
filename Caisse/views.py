@@ -46,6 +46,7 @@ from PharmacyInventory.pagination import CustomPageNumberPagination
 class DailyReportProfitsList(ListAPIView):
     serializer_class = DailyProfitsSerializer
     pagination_class = CustomPageNumberPagination
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         # Filter and modify the queryset as needed
@@ -73,6 +74,7 @@ class DailyReportProfitsList(ListAPIView):
 class DailyReportCount(ListAPIView):
     serializer_class = DailyProfitsSerializer
     pagination_class = CustomPageNumberPagination
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         # Filter and modify the queryset as needed
@@ -93,11 +95,14 @@ class DailyReportCount(ListAPIView):
             total_sum_sale = sum(item["total_sales"] for item in daily_profits)
             total_sum_profit = sum(item["profit"] for item in daily_profits)
             total_sum_expenses = sum(item["total_expenses"] for item in daily_profits)
+            total_sum_savings = sum(item["saving"] for item in daily_profits)
+
             sums = {
                     "total_solde": total_sum_solde,
                     "total_profit": total_sum_profit,
                     "total_expenses": total_sum_expenses,
-                    "total_sum_sale": total_sum_sale
+                    "total_sum_sale": total_sum_sale,
+                "total_sum_savings": total_sum_savings
                 }
 
             return Response(sums)
@@ -116,6 +121,7 @@ class DailyReportCount(ListAPIView):
 class DailyReportProfitsFilter(ListAPIView):
     serializer_class = DailyProfitsSerializer
     pagination_class = CustomPageNumberPagination
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         # Get the date range from query parameters
@@ -141,11 +147,13 @@ class DailyReportProfitsFilter(ListAPIView):
         total_sum_sale = sum(item["total_sales"] for item in daily_profits)
         total_sum_profit = sum(item["profit"] for item in daily_profits)
         total_sum_expenses = sum(item["total_expenses"] for item in daily_profits)
+        total_sum_savings = sum(item["saving"] for item in daily_profits)
         sums = {
             "total_solde": total_sum_solde,
             "total_profit": total_sum_profit,
             "total_expenses": total_sum_expenses,
-            "total_sum_sale": total_sum_sale
+            "total_sum_sale": total_sum_sale,
+            "total_sum_savings":total_sum_savings
         }
 
         # Serialize the sums along with the daily_profits data
@@ -166,6 +174,8 @@ class DailyReportProfitsFilter(ListAPIView):
         return Response(response_data)
 
 class SaleViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
     queryset = DailySales.objects.order_by_date()
     serializer_class = DailySalesSerializer
     pagination_class = CustomPageNumberPagination

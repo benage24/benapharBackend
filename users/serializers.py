@@ -1,7 +1,7 @@
 # serializers.py
 from django.core.serializers import serialize
 from rest_framework import serializers
-from .models import Role, User, Module, CustomPermission
+from .models import Role, User, Module, CustomPermission, UserActivity
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 # class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -34,6 +34,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         module_name = module.name if module else None
         role_name = role.name if role else None
         role_privileges = []
+        module_privileges = []
         if role:
             role_privileges = list(role.permissions.values_list('codename', flat=True))
         if module:
@@ -44,11 +45,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'id': user.id,
             'username': user.username,
             'email': user.email,
-            # 'role': role_name,
-            # 'module': module_name,
-            # 'module_privileges':module_privileges,
-            # 'role_privileges': role_privileges,
-            # Include any other user information you want
+
         }
         data['module']= module_name
         data['role'] = role_name
@@ -82,4 +79,10 @@ class ModuleSerializer(serializers.ModelSerializer):
 class CustomPermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomPermission
+        fields = '__all__'
+
+
+class UserActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserActivity
         fields = '__all__'
