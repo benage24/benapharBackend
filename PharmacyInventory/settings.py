@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'Product',
     'users',
     'Caisse',
-    'finance'
+    'finance',
+    'file_upload'
 ]
 AUTH_USER_MODEL ='users.User'
 MIDDLEWARE = [

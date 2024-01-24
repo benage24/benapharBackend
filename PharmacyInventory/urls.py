@@ -28,4 +28,5 @@ urlpatterns = [
     path('product/', include('Product.urls')),
     path('caisse/', include('Caisse.urls')),
     path('user/', include('users.urls')),
+    path('file/', include('file_upload.urls')),
 ]

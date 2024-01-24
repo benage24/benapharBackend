@@ -8,7 +8,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from django.utils import timezone
 from Caisse.models import DailySales, DailyExpenses
 from Caisse.serializers import DailySalesSerializer, DailyExpensesSerializer, DailyProfitsSerializer
 from PharmacyInventory.pagination import CustomPageNumberPagination
@@ -23,41 +23,29 @@ from PharmacyInventory.pagination import CustomPageNumberPagination
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class DailyReportProfitsList(ListAPIView):
     serializer_class = DailyProfitsSerializer
     pagination_class = CustomPageNumberPagination
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Filter and modify the queryset as needed
-        queryset = DailySales.objects.all().order_by('date')
+        # Get the current month and year
+        current_month = timezone.now().month
+        current_year = timezone.now().year
+
+        # Filter the queryset for the current month
+        queryset = DailySales.objects.filter(date__month=current_month, date__year=current_year).order_by('-date')
+        # print("queryset",queryset)
         return queryset
 
     def list(self, request, *args, **kwargs):
         # Get the filtered and ordered queryset
         queryset = self.filter_queryset(self.get_queryset())
+        # print("queryset", queryset)
         daily_profits = []
+
         for sale in queryset:
+            print( sale.results)
             daily_profits.append(sale.results)
 
         # Paginate the data
@@ -70,6 +58,52 @@ class DailyReportProfitsList(ListAPIView):
         serializer = self.get_serializer(daily_profits, many=True)
         return Response(serializer.data)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# class DailyReportProfitsList(ListAPIView):
+#     serializer_class = DailyProfitsSerializer
+#     pagination_class = CustomPageNumberPagination
+#     permission_classes = [permissions.IsAuthenticated]
+#
+#     def get_queryset(self):
+#         # Filter and modify the queryset as needed
+#         queryset = DailySales.objects.all().order_by('-date')
+#         return queryset
+#
+#     def list(self, request, *args, **kwargs):
+#         # Get the filtered and ordered queryset
+#         queryset = self.filter_queryset(self.get_queryset())
+#         daily_profits = []
+#         for sale in queryset:
+#             daily_profits.append(sale.results)
+#
+#
+#         # Paginate the data
+#         page = self.paginate_queryset(daily_profits)
+#         if page is not None:
+#             serializer = self.get_serializer(page, many=True)
+#             return self.get_paginated_response(serializer.data)
+#
+#         # If not paginated, serialize and return the data
+#         serializer = self.get_serializer(daily_profits, many=True)
+#         return Response(serializer.data)
+#
 
 class DailyReportCount(ListAPIView):
     serializer_class = DailyProfitsSerializer
@@ -84,18 +118,32 @@ class DailyReportCount(ListAPIView):
         return queryset
 
     def list(self, request, *args, **kwargs):
+            # Get the current month and year
+            current_month = datetime.now().month
+            current_year = datetime.now().year
             # Get the filtered and ordered queryset
             queryset = self.filter_queryset(self.get_queryset())
+
             daily_profits = []
+            filtered_profits = [item for item in daily_profits if datetime.strptime(item["date"],
+                                                                                    "%Y-%m-%d").month == current_month and datetime.strptime(
+                item["date"], "%Y-%m-%d").year == current_year]
+
             for sale in queryset:
 
                 daily_profits.append(sale.results)
             #     # Calculate sums
-            total_sum_solde = sum(item["solde"] for item in daily_profits)
-            total_sum_sale = sum(item["total_sales"] for item in daily_profits)
-            total_sum_profit = sum(item["profit"] for item in daily_profits)
-            total_sum_expenses = sum(item["total_expenses"] for item in daily_profits)
-            total_sum_savings = sum(item["saving"] for item in daily_profits)
+            # total_sum_solde = sum(item["solde"] for item in daily_profits)
+            # total_sum_sale = sum(item["total_sales"] for item in daily_profits)
+            # total_sum_profit = sum(item["profit"] for item in daily_profits)
+            # total_sum_expenses = sum(item["total_expenses"] for item in daily_profits)
+            # total_sum_savings = sum(item["saving"] for item in daily_profits)
+            # Calculate sums for the filtered data
+            total_sum_solde = sum(item["solde"] for item in filtered_profits)
+            total_sum_profit = sum(item["profit"] for item in filtered_profits)
+            total_sum_expenses = sum(item["total_expenses"] for item in filtered_profits)
+            total_sum_savings = sum(item["saving"] for item in filtered_profits)
+            total_sum_sale = sum(item["total_sales"] for item in filtered_profits)
 
             sums = {
                     "total_solde": total_sum_solde,
